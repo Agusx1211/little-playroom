@@ -18,8 +18,14 @@ import snow from './snow.js';
 import worm from './worm.js';
 import lights from './lights.js';
 import shapes from './shapes.js';
+import flowers from './flowers.js';
+import butterflies from './butterflies.js';
+import frogs from './frogs.js';
+import fireflies from './fireflies.js';
+import berries from './berries.js';
 
 export const games = [
   bubbles, paint, fireworks, balls, kaleido, stars, rain, peekaboo, pads, balloons,
   magnets, pond, daynight, blob, blocks, xylophone, snow, worm, lights, shapes,
+  flowers, butterflies, frogs, fireflies, berries,
 ];

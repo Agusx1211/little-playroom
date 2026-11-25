@@ -114,9 +114,7 @@ async function cachedPaths() {
   return paths;
 }
 
-test('install precaches every runtime file under the app scope, including all 20 registered games', async () => {
-  assert.equal(games.length, 20);
-  assert.equal(new Set(games.map(game => game.id)).size, 20);
+test('install precaches every runtime file under the app scope, including all registered games', async () => {
   const paths = await cachedPaths();
   const expected = ['index.html','manifest.webmanifest','audio.js','shell.js','sw.js'];
   for (const dir of ['games','icons']) {

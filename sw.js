@@ -1,8 +1,10 @@
 // Bump this version whenever any shipped module, page or icon changes.
-const VERSION = '20261125T223802Z';
+const VERSION = '20261125T232227Z';
 const PREFIX = 'little-playroom:' + self.registration.scope + ':';
 const CACHE = PREFIX + VERSION;
-const ids = 'bubbles paint fireworks balls kaleido stars rain peekaboo pads balloons magnets pond daynight blob blocks xylophone snow worm lights shapes'.split(' ');
+const ids = `bubbles paint fireworks balls kaleido stars rain peekaboo pads balloons
+  magnets pond daynight blob blocks xylophone snow worm lights shapes
+  flowers butterflies frogs fireflies berries`.split(/\s+/);
 const files = [
   './index.html', './sw.js', './manifest.webmanifest', './shell.js', './audio.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
