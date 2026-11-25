@@ -141,8 +141,8 @@ async function loadGames() {
 
 const games = await loadGames();
 
-test('the registry lists twenty-five distinct games', () => {
-  assert.equal(games.length, 25);
+test('the registry lists the full set of distinct games', () => {
+  assert.equal(games.length, 27);
   assert.equal(new Set(games.map(g => g.id)).size, games.length);
 });
 
