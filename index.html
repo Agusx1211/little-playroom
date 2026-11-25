@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1426">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Little Playroom</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="icon" href="./icons/icon-192.png">
+  <style>
+    :root { color-scheme: dark; background: #0d1426; }
+    *, *::before, *::after { box-sizing: border-box; touch-action: none; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none;
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    body { background: radial-gradient(ellipse at 16% 0%, #263045, transparent 57%), #0d1426; }
+    [hidden] { display: none !important; }
+    button { appearance: none; -webkit-appearance: none; border: 0; padding: 0; color: inherit; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #fff0af; outline-offset: -4px; }
+    #picker { position: absolute; inset: 0; display: grid; place-items: center;
+      padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+               max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+    #tiles { width: min(100%, 1040px); height: min(100%, 900px); display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(0, 1fr));
+      gap: clamp(5px, 1.15vmin, 14px); }
+    @media (orientation: landscape) {
+      #tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); }
+    }
+    .tile { display: grid; place-items: center; overflow: hidden; border-radius: clamp(12px, 3vmin, 34px);
+      background: #1b2540; background: linear-gradient(148deg, color-mix(in srgb, var(--tint) 16%, #172238), #141d31);
+      box-shadow: inset 0 1px 0 #ffffff18, 0 2px 5px #06091266; }
+    .tile:active { filter: brightness(1.14); }
+    .tile canvas { display: block; border-radius: inherit; pointer-events: none; }
+    #stage { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+    #parents { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+      display: flex; gap: 10px; padding: 8px; border-radius: 48px; background: #141e32f5;
+      box-shadow: 0 3px 16px #05081180, inset 0 0 0 1px #69798b; }
+    #parents button { width: clamp(62px, 11vmin, 82px); aspect-ratio: 1; border-radius: 50%;
+      display: grid; place-items: center; background: #34475b; color: #fff0d6; }
+    #parents button:active { background: #52697c; }
+    #parents svg { width: 50%; height: 50%; fill: none; stroke: currentColor; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round; }
+    #sound[aria-pressed="true"] .off, #sound[aria-pressed="false"] .on { display: none; }
+    #hold { position: absolute; left: max(14px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top));
+      pointer-events: none; width: 28px; height: 28px; opacity: .75; transform: rotate(-90deg); }
+    #hold circle { fill: none; stroke: #ffebbb; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 100;
+      stroke-dashoffset: var(--offset, 100); }
+  </style>
+</head>
+<body>
+  <main id="picker" aria-label="Choose a game"><div id="tiles"></div></main>
+  <canvas id="stage" aria-label="Play area" hidden></canvas>
+  <svg id="hold" viewBox="0 0 32 32" aria-hidden="true" hidden><circle cx="16" cy="16" r="13" pathLength="100"/></svg>
+  <nav id="parents" aria-label="Parent controls" hidden>
+    <button id="home" aria-label="Game picker"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5.5 10v10h5v-6h3v6h5V10"/></svg></button>
+    <button id="sound" aria-label="Sound" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z"/><path class="off" d="m16 9 6 6m0-6-6 6"/><path class="on" d="M16 8.5a5 5 0 0 1 0 7m3-10a9 9 0 0 1 0 13"/></svg></button>
+  </nav>
+  <script type="module" src="./shell.js"></script>
+</body>
+</html>
