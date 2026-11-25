@@ -14,8 +14,8 @@ const bar = () => transition(hold(), {type: 'tick'}, HOLD_MS);
 
 test('picker boots muted and only a game selection leaves it', () => {
   const state = initialState();
-  assert.deepEqual(state, { mode: 'picker', muted: true });
-  for (const type of ['home','sound','down','up','interact','pause','tick']) {
+  assert.deepEqual(state, { mode: 'picker', page: 0, muted: true });
+  for (const type of ['home','sound','next','down','up','interact','pause','tick']) {
     assert.equal(transition(state, {type}, 5000), state);
   }
   assert.deepEqual(enter(), {mode: 'playing', game: 'bubbles', muted: true});
@@ -61,8 +61,34 @@ test('only parent home exits; controls time out four seconds after last use', ()
   assert.equal(sound.until, 8500);
   const touched = transition(sound, {type:'interact'}, 7000);
   assert.equal(touched.until, 11000);
-  assert.deepEqual(transition(touched, {type:'home'}, 8100), {mode:'picker',muted:false});
+  assert.deepEqual(transition(touched, {type:'home'}, 8100), {mode:'picker',page:0,muted:false});
   assert.equal(transition(sound, {type:'pause'}, 4600).mode, 'playing');
+});
+
+test('next changes games directly, wraps around, and keeps the sound setting', () => {
+  let state = transition(bar(), {type:'sound'}, 2500);
+  for (let i = 1; i <= games.length; i++) {
+    state = transition(state, {type:'next'}, 2500 + i);
+    assert.deepEqual(state, {mode:'playing', game:games[i % games.length].id, muted:false});
+  }
+  assert.deepEqual(transition(hold(), {type:'next'}, 300), {mode:'playing', game:games[1].id, muted:true});
+});
+
+test('picker navigation stops at the ends and home returns to the page of the active game', () => {
+  const lastPage = Math.ceil(games.length / 20) - 1;
+  const back = {type:'turnPage', direction:-1};
+  const forward = {type:'turnPage', direction:1};
+  let state = initialState();
+  assert.equal(transition(state, back, 0), state);
+  for (let i = 1; i <= lastPage; i++) {
+    state = transition(state, forward, i);
+    assert.equal(state.page, i);
+  }
+  assert.equal(transition(state, forward, 10), state);
+  state = transition(state, {type:'select', game:games.at(-1).id}, 20);
+  state = transition(state, pointer('down'), 30);
+  state = transition(state, {type:'tick'}, 30 + HOLD_MS);
+  assert.equal(transition(state, {type:'home'}, 40 + HOLD_MS).page, lastPage);
 });
 
 test('sound helpers are silent and callable before audio access and without a device', () => {

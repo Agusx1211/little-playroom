@@ -5,14 +5,24 @@ export const HOLD_MS = 2000;
 export const BAR_MS = 4000;
 const CORNER = 72;
 const DRIFT = 24;
-export const initialState = () => ({ mode: 'picker', muted: true });
+const PAGE_SIZE = 20;
+const pageCount = Math.ceil(games.length / PAGE_SIZE);
+export const initialState = () => ({ mode: 'picker', page: 0, muted: true });
 
 function playing(state) { return { mode: 'playing', game: state.game, muted: state.muted }; }
 function insideCorner(p) { return p.x >= 0 && p.y >= 0 && p.x < CORNER && p.y < CORNER; }
 
 export function transition(state, event, now) {
+  if (event.type === 'next' && state.mode !== 'picker') {
+    const index = games.findIndex(item => item.id === state.game);
+    return { mode: 'playing', game: games[(index + 1) % games.length].id, muted: state.muted };
+  }
   switch (state.mode) {
     case 'picker':
+      if (event.type === 'turnPage') {
+        const page = Math.min(pageCount - 1, Math.max(0, state.page + event.direction));
+        return page === state.page ? state : { ...state, page };
+      }
       return event.type === 'select' ? { mode: 'playing', game: event.game, muted: state.muted } : state;
     case 'playing':
       if (event.type === 'down' && insideCorner(event)) {
@@ -30,7 +40,10 @@ export function transition(state, event, now) {
     }
     case 'parent':
       if (event.type === 'pause' || (event.type === 'tick' && now >= state.until)) return playing(state);
-      if (event.type === 'home') return { mode: 'picker', muted: state.muted };
+      if (event.type === 'home') {
+        const index = games.findIndex(item => item.id === state.game);
+        return { mode: 'picker', page: Math.floor(index / PAGE_SIZE), muted: state.muted };
+      }
       if (event.type === 'sound') return { ...state, muted: !state.muted, until: now + BAR_MS };
       if (event.type === 'interact') return { ...state, until: now + BAR_MS };
       return state;
@@ -64,9 +77,16 @@ function buildPicker(container, select) {
   });
   let dpr = 1;
   let last = -Infinity;
+  let visible = [];
+  function showPage(page) {
+    const start = page * PAGE_SIZE;
+    visible = tiles.slice(start, start + PAGE_SIZE);
+    tiles.forEach((tile, i) => { tile.button.hidden = i < start || i >= start + PAGE_SIZE; });
+    resize();
+  }
   function resize() {
     dpr = Math.min(globalThis.devicePixelRatio || 1, 2);
-    for (const tile of tiles) {
+    for (const tile of visible) {
       const bounds = tile.button.getBoundingClientRect();
       tile.size = Math.min(bounds.width, bounds.height);
       tile.canvas.style.width = tile.canvas.style.height = tile.size + 'px';
@@ -77,7 +97,7 @@ function buildPicker(container, select) {
   function frame(t) {
     if (t - last < 0.09) return;
     last = t;
-    for (const { game, ctx, size } of tiles) {
+    for (const { game, ctx, size } of visible) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
       ctx.save();
@@ -85,7 +105,7 @@ function buildPicker(container, select) {
       ctx.restore();
     }
   }
-  return { resize, frame };
+  return { showPage, resize, frame };
 }
 
 export function createStage(canvas, audio) {
@@ -150,6 +170,11 @@ function boot() {
   const canvas = document.querySelector('#stage');
   const bar = document.querySelector('#parents');
   const sound = document.querySelector('#sound');
+  const nextGame = document.querySelector('#next-game');
+  const pages = document.querySelector('#pages');
+  const previousPage = document.querySelector('#previous-page');
+  const nextPage = document.querySelector('#next-page');
+  const pageNumber = document.querySelector('#page-number');
   const hold = document.querySelector('#hold');
   const audio = createAudio();
   const game = createStage(canvas, audio);
@@ -157,6 +182,13 @@ function boot() {
   let state = initialState();
   let lastFrame = null;
   let frameId;
+  function showPage(page) {
+    pages.hidden = pageCount <= 1;
+    previousPage.disabled = page === 0;
+    nextPage.disabled = page === pageCount - 1;
+    pageNumber.textContent = (page + 1) + ' / ' + pageCount;
+    picker.showPage(page);
+  }
   function dispatch(event, now = performance.now()) {
     const next = transition(state, event, now);
     if (state === next) return;
@@ -165,6 +197,7 @@ function boot() {
     const selecting = state.mode === 'picker';
     pickerElement.hidden = !selecting;
     canvas.hidden = selecting;
+    nextGame.hidden = selecting;
     bar.hidden = state.mode !== 'parent';
     hold.toggleAttribute('hidden', state.mode !== 'holding');
     if (state.mode === 'holding' && before.mode !== 'holding') hold.style.setProperty('--offset', 100);
@@ -172,10 +205,13 @@ function boot() {
     sound.setAttribute('aria-pressed', String(!state.muted));
     if (before.game !== state.game) {
       game.stop();
-      if (selecting) picker.resize();
-      else game.start(games.find(item => item.id === state.game));
+      if (!selecting) {
+        canvas.setAttribute('aria-label', state.game + ' play area');
+        game.start(games.find(item => item.id === state.game));
+      }
       lastFrame = null;
     }
+    if (selecting && before.page !== state.page) showPage(state.page);
   }
   function draw(now) {
     dispatch({ type: 'tick' }, now);
@@ -199,6 +235,21 @@ function boot() {
     canvas.addEventListener(name, event => handlePointer(type, event));
   }
   bar.addEventListener('pointerdown', () => dispatch({ type: 'interact' }));
+  nextGame.addEventListener('pointerdown', event => {
+    if (event.button === 0) nextGame.setPointerCapture(event.pointerId);
+  });
+  nextGame.addEventListener('pointerup', event => {
+    if (!nextGame.hasPointerCapture(event.pointerId)) return;
+    const hit = document.elementFromPoint(event.clientX, event.clientY);
+    if (nextGame.contains(hit)) dispatch({ type: 'next' });
+  });
+  // Secondary fingers can tap without generating a click. Pointerup handles pointing
+  // devices; keyboard and assistive activation use a click with no tap count.
+  nextGame.addEventListener('click', event => {
+    if (event.detail === 0) dispatch({ type: 'next' });
+  });
+  previousPage.addEventListener('click', () => dispatch({ type: 'turnPage', direction: -1 }));
+  nextPage.addEventListener('click', () => dispatch({ type: 'turnPage', direction: 1 }));
   document.querySelector('#home').addEventListener('click', () => dispatch({ type: 'home' }));
   sound.addEventListener('click', () => dispatch({ type: 'sound' }));
   for (const name of ['contextmenu','selectstart','dragstart','gesturestart','gesturechange','gestureend']) {
@@ -227,7 +278,7 @@ function boot() {
       frameId = requestAnimationFrame(draw);
     }
   });
-  picker.resize();
+  showPage(state.page);
   frameId = requestAnimationFrame(draw);
   keepAwake();
   if ('serviceWorker' in navigator) {
