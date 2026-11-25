@@ -25,9 +25,12 @@ import fireflies from './fireflies.js';
 import berries from './berries.js';
 import train from './train.js';
 import boats from './boats.js';
+import planes from './planes.js';
+import tractors from './tractors.js';
+import rockets from './rockets.js';
 
 export const games = [
   bubbles, paint, fireworks, balls, kaleido, stars, rain, peekaboo, pads, balloons,
   magnets, pond, daynight, blob, blocks, xylophone, snow, worm, lights, shapes,
-  flowers, butterflies, frogs, fireflies, berries, train, boats,
+  flowers, butterflies, frogs, fireflies, berries, train, boats, planes, tractors, rockets,
 ];
