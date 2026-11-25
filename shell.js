@@ -61,6 +61,21 @@ function fitCanvas(canvas, width, height, dpr) {
   }
 }
 
+function onButtonActivate(button, activate) {
+  button.addEventListener('pointerdown', event => {
+    if (event.button === 0 && !button.disabled) button.setPointerCapture(event.pointerId);
+  });
+  button.addEventListener('pointerup', event => {
+    if (!button.hasPointerCapture(event.pointerId) || button.disabled) return;
+    if (button.contains(document.elementFromPoint(event.clientX, event.clientY))) activate();
+  });
+  // Keyboard and assistive activation can click without a pointer. A compatibility
+  // click from a finger held on a different screen must not activate this button.
+  button.addEventListener('click', event => {
+    if (event.detail === 0 && !button.disabled) activate();
+  });
+}
+
 function buildPicker(container, select) {
   const tiles = games.map(game => {
     const button = document.createElement('button');
@@ -71,7 +86,7 @@ function buildPicker(container, select) {
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-hidden', 'true');
     button.append(canvas);
-    button.addEventListener('click', () => select(game.id));
+    onButtonActivate(button, () => select(game.id));
     container.append(button);
     return { game, button, canvas, ctx: canvas.getContext('2d'), size: 0 };
   });
@@ -236,23 +251,11 @@ function boot() {
     canvas.addEventListener(name, event => handlePointer(type, event));
   }
   bar.addEventListener('pointerdown', () => dispatch({ type: 'interact' }));
-  nextGame.addEventListener('pointerdown', event => {
-    if (event.button === 0) nextGame.setPointerCapture(event.pointerId);
-  });
-  nextGame.addEventListener('pointerup', event => {
-    if (!nextGame.hasPointerCapture(event.pointerId)) return;
-    const hit = document.elementFromPoint(event.clientX, event.clientY);
-    if (nextGame.contains(hit)) dispatch({ type: 'next' });
-  });
-  // Secondary fingers can tap without generating a click. Pointerup handles pointing
-  // devices; keyboard and assistive activation use a click with no tap count.
-  nextGame.addEventListener('click', event => {
-    if (event.detail === 0) dispatch({ type: 'next' });
-  });
-  previousPage.addEventListener('click', () => dispatch({ type: 'turnPage', direction: -1 }));
-  nextPage.addEventListener('click', () => dispatch({ type: 'turnPage', direction: 1 }));
-  document.querySelector('#home').addEventListener('click', () => dispatch({ type: 'home' }));
-  sound.addEventListener('click', () => dispatch({ type: 'sound' }));
+  onButtonActivate(nextGame, () => dispatch({ type: 'next' }));
+  onButtonActivate(previousPage, () => dispatch({ type: 'turnPage', direction: -1 }));
+  onButtonActivate(nextPage, () => dispatch({ type: 'turnPage', direction: 1 }));
+  onButtonActivate(document.querySelector('#home'), () => dispatch({ type: 'home' }));
+  onButtonActivate(sound, () => dispatch({ type: 'sound' }));
   for (const name of ['contextmenu','selectstart','dragstart','gesturestart','gesturechange','gestureend']) {
     document.addEventListener(name, event => event.preventDefault(), { passive: false });
   }

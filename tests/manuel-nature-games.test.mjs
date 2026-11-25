@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const IDS = ['flowers', 'butterflies', 'frogs', 'fireflies', 'berries'];
+const IDS = ['flowers', 'butterflies', 'frogs', 'fireflies', 'berries', 'turtles', 'rainbows', 'clouds', 'ducks', 'garden'];
 
 function fakeCtx(record) {
   const gradient = { addColorStop() {} };
@@ -189,5 +189,94 @@ test('berries: red is picked with a pop, green only wobbles', async () => {
   }
   assert.ok(picked, 'a ripe berry gets picked somewhere along the branch');
   assert.ok(states().includes('green') || states().includes('blossom'), 'the hedge keeps un-ripe fruit');
+  run.stop();
+});
+
+test('turtles: a tap on a basking turtle plops it in, it cruises, and later it is back on the log', async () => {
+  const game = (await import('../games/turtles.js')).default;
+  const h = fakeStage(17);
+  const run = game.start(h.stage);
+  const states0 = run.debug().states;
+  assert.ok(states0.every(s => s === 'basking'), 'everyone starts on the log');
+  // the first turtle sits left of centre on the log: tap it
+  h.pointer('down', { id: 1, x: 293, y: 287, pressure: 0.5, pointerType: 'touch' });
+  h.frame(dt, dt);
+  assert.ok(run.debug().states.some(s => s === 'plop'), 'the tapped turtle plops in at once');
+  const seen = new Set();
+  for (let i = 0; i < 60 * 12; i++) {
+    h.frame(dt, dt + i * dt);
+    for (const s of run.debug().states) seen.add(s);
+  }
+  assert.ok(seen.has('cruising') && seen.has('climb') && seen.has('shaking'), 'it swims, climbs and shakes');
+  assert.ok(run.debug().states.every(s => ['basking', 'plop', 'cruising', 'climb', 'shaking'].includes(s)));
+  run.stop();
+});
+
+test('rainbows: a held finger raises and carries a bow; release shimmers then fades it out', async () => {
+  const game = (await import('../games/rainbows.js')).default;
+  const h = fakeStage(19);
+  const run = game.start(h.stage);
+  h.pointer('down', { id: 1, x: 300, y: 300, pressure: 0.5, pointerType: 'touch' });
+  for (let i = 0; i < 40; i++) h.frame(dt, i * dt);
+  assert.ok(run.debug().phases.includes('held'), 'the bow rides the held finger');
+  h.pointer('move', { id: 1, x: 700, y: 340, pressure: 0.5, pointerType: 'touch' });
+  for (let i = 0; i < 40; i++) h.frame(dt, 1 + i * dt);
+  h.pointer('up', { id: 1, x: 700, y: 340, pressure: 0.5, pointerType: 'touch' });
+  for (let i = 0; i < 30; i++) h.frame(dt, 2 + i * dt);
+  assert.ok(run.debug().phases.includes('shimmer'), 'after release it shimmers');
+  for (let i = 0; i < 60 * 6; i++) h.frame(dt, 3 + i * dt);
+  assert.equal(run.debug().phases.length, 0, 'and fades away to an empty sky');
+  run.stop();
+});
+
+test('clouds: a tap on clear sky puffs a new cloud; a tap on a cloud shakes off baby puffs', async () => {
+  const game = (await import('../games/clouds.js')).default;
+  const h = fakeStage(21);
+  const run = game.start(h.stage);
+  const n0 = run.debug().phases.length;
+  h.pointer('down', { id: 1, x: 500, y: 560, pressure: 0.5, pointerType: 'touch' });
+  h.frame(dt, dt);
+  assert.equal(run.debug().phases.length, n0 + 1, 'a new cloud puffed up on the spot');
+  assert.ok(run.debug().phases.includes('puffing'));
+  const e0 = run.debug().entities;
+  h.pointer('down', { id: 2, x: 500, y: 560, pressure: 0.5, pointerType: 'touch' });
+  h.frame(dt, dt);
+  assert.ok(run.debug().entities > e0 + 1, 'tapping the cloud shook loose baby puffs');
+  run.stop();
+});
+
+test('ducks: a touch sends Mother waddling there and the line follows; a honk answers a tap on her', async () => {
+  const game = (await import('../games/ducks.js')).default;
+  const h = fakeStage(23);
+  const run = game.start(h.stage);
+  h.pointer('down', { id: 1, x: 220, y: 620, pressure: 0.5, pointerType: 'touch' });
+  h.frame(dt, dt);
+  assert.equal(run.debug().mood, 'waddling', 'Mother starts for the food at once');
+  for (let i = 0; i < 60 * 4; i++) h.frame(dt, i * dt);   // she arrives and eats
+  assert.equal(run.debug().mood, 'idle', 'she settles after eating');
+  const notes0 = h.record.notes;
+  h.pointer('down', { id: 2, x: 220, y: 620, pressure: 0.5, pointerType: 'touch' });
+  h.frame(dt, 5);
+  assert.ok(h.record.notes > notes0, 'a tap on Mother honks');
+  run.stop();
+});
+
+test('garden: a seed planted by a touch ripens and is harvested with a pop', async () => {
+  const game = (await import('../games/garden.js')).default;
+  const h = fakeStage(29);
+  const run = game.start(h.stage);
+  h.pointer('down', { id: 1, x: 300, y: 600, pressure: 0.5, pointerType: 'touch' });
+  h.frame(dt, dt);
+  assert.ok(run.debug().phases.includes('seeded'), 'the seed is in the ground on the next frame');
+  for (let i = 0; i < 60 * 3; i++) h.frame(dt, i * dt);
+  assert.ok(run.debug().phases.includes('leafy'), 'it grew leaves');
+  for (let i = 0; i < 60 * 9; i++) h.frame(dt, 3 + i * dt);
+  assert.ok(run.debug().phases.includes('ripe'), 'and ripened');
+  const n0 = run.debug().phases.length;
+  const pops0 = h.record.pops;
+  h.pointer('down', { id: 2, x: 300, y: 600, pressure: 0.5, pointerType: 'touch' });
+  h.frame(dt, 12);
+  assert.ok(h.record.pops > pops0, 'the ripe one pops out');
+  assert.equal(run.debug().phases.length, n0 - 1, 'and the plot is empty again');
   run.stop();
 });

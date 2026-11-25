@@ -28,9 +28,20 @@ import boats from './boats.js';
 import planes from './planes.js';
 import tractors from './tractors.js';
 import rockets from './rockets.js';
+import turtles from './turtles.js';
+import carousel from './carousel.js';
+import rainbows from './rainbows.js';
+import digger from './digger.js';
+import clouds from './clouds.js';
+import hotair from './hotair.js';
+import ducks from './ducks.js';
+import submarine from './submarine.js';
+import garden from './garden.js';
+import pinwheels from './pinwheels.js';
 
 export const games = [
   bubbles, paint, fireworks, balls, kaleido, stars, rain, peekaboo, pads, balloons,
   magnets, pond, daynight, blob, blocks, xylophone, snow, worm, lights, shapes,
   flowers, butterflies, frogs, fireflies, berries, train, boats, planes, tractors, rockets,
+  turtles, carousel, rainbows, digger, clouds, hotair, ducks, submarine, garden, pinwheels,
 ];
