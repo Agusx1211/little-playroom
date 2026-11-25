@@ -3,7 +3,7 @@ export function createAudio() {
   let master;
   let noise;
   let muted = true;
-  const voices = new Set();
+  let group;
   function setMuted(value) {
     muted = value;
     if (!muted && !context) {
@@ -21,6 +21,12 @@ export function createAudio() {
     if (!muted) void context.resume().catch(() => {});
   }
   function play(source, seconds, level, filter) {
+    if (!group) {
+      const output = context.createGain();
+      output.connect(master);
+      group = { output, voices: new Set() };
+    }
+    const { output, voices } = group;
     const volume = context.createGain();
     const time = context.currentTime;
     const end = time + seconds;
@@ -29,13 +35,32 @@ export function createAudio() {
     volume.gain.exponentialRampToValueAtTime(0.0001, end);
     if (filter) source.connect(filter).connect(volume);
     else source.connect(volume);
-    volume.connect(master);
+    volume.connect(output);
     voices.add(source);
-    source.onended = () => { voices.delete(source); source.disconnect(); filter?.disconnect(); volume.disconnect(); };
+    source.onended = () => {
+      voices.delete(source);
+      source.disconnect();
+      filter?.disconnect();
+      volume.disconnect();
+      if (!voices.size) {
+        output.disconnect();
+        if (group?.output === output) group = null;
+      }
+    };
     source.start(time);
     source.stop(end + 0.01);
   }
-  function canPlay() { return !muted && context?.state === 'running' && voices.size < 8; }
+  function stopAll() {
+    if (!group) return;
+    const { output, voices } = group;
+    group = null;
+    const now = context.currentTime;
+    const end = now + 0.01;
+    output.gain.setValueAtTime(1, now);
+    output.gain.linearRampToValueAtTime(0, end);
+    for (const source of voices) source.stop(end);
+  }
+  function canPlay() { return !muted && context?.state === 'running' && (group?.voices.size ?? 0) < 8; }
   function note(freq = 330, duration = 0.18) {
     if (!canPlay() || !Number.isFinite(freq) || !Number.isFinite(duration)) return;
     const oscillator = context.createOscillator();
@@ -57,5 +82,5 @@ export function createAudio() {
     filter.frequency.value = 780;
     play(source, 0.30, 0.23, filter);
   }
-  return { get muted() { return muted; }, setMuted, note, pop() { note(575, 0.085); }, whoosh };
+  return { get muted() { return muted; }, setMuted, stopAll, note, pop() { note(575, 0.085); }, whoosh };
 }

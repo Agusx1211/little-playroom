@@ -94,9 +94,55 @@ test('picker navigation stops at the ends and home returns to the page of the ac
 test('sound helpers are silent and callable before audio access and without a device', () => {
   const audio = createAudio();
   assert.equal(audio.muted, true);
+  audio.stopAll();
   audio.note(220, 0.2); audio.pop(); audio.whoosh();
   audio.setMuted(false); audio.note(220, 0.2); audio.setMuted(true);
   assert.equal(audio.muted, true);
+});
+
+test('leaving a game fades all its voices and immediately frees the new game to play', t => {
+  const sources = [];
+  const ramps = [];
+  class AudioNode {
+    connect(next) { return next; }
+    disconnect() {}
+  }
+  class FakeContext {
+    currentTime = 1;
+    state = 'running';
+    resume() { return Promise.resolve(); }
+    createGain() {
+      return Object.assign(new AudioNode(), {gain: {
+        setValueAtTime() {}, setTargetAtTime() {}, exponentialRampToValueAtTime() {},
+        linearRampToValueAtTime(value, time) { ramps.push([value, time]); },
+      }});
+    }
+    createOscillator() {
+      const source = Object.assign(new AudioNode(), {
+        frequency: {}, start() {}, stop(at) { this.stopTime = at; },
+      });
+      sources.push(source);
+      return source;
+    }
+  }
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'AudioContext');
+  t.after(() => {
+    if (original) Object.defineProperty(globalThis, 'AudioContext', original);
+    else delete globalThis.AudioContext;
+  });
+  globalThis.AudioContext = FakeContext;
+  const audio = createAudio();
+  audio.setMuted(false);
+  for (let i = 0; i < 9; i++) audio.note(330, 1);
+  assert.equal(sources.length, 8);
+  audio.stopAll();
+  assert.deepEqual(ramps, [[0, 1.01]]);
+  assert.ok(sources.every(source => source.stopTime === 1.01));
+  audio.note(550, 1);
+  assert.equal(sources.length, 9);
+  for (const source of sources.slice(0, 8)) source.onended();
+  audio.stopAll();
+  assert.equal(sources[8].stopTime, 1.01);
 });
 
 const root = new URL('../', import.meta.url);

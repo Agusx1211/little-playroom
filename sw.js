@@ -1,5 +1,5 @@
 // Bump this version whenever any shipped module, page or icon changes.
-const VERSION = '20261125T233253Z';
+const VERSION = '20261125T233611Z';
 const PREFIX = 'little-playroom:' + self.registration.scope + ':';
 const CACHE = PREFIX + VERSION;
 const ids = `bubbles paint fireworks balls kaleido stars rain peekaboo pads balloons

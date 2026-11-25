@@ -205,6 +205,7 @@ function boot() {
     sound.setAttribute('aria-pressed', String(!state.muted));
     if (before.game !== state.game) {
       game.stop();
+      audio.stopAll();
       if (!selecting) {
         canvas.setAttribute('aria-label', state.game + ' play area');
         game.start(games.find(item => item.id === state.game));
