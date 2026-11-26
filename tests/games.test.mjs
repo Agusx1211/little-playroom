@@ -142,8 +142,28 @@ async function loadGames() {
 const games = await loadGames();
 
 test('the registry lists the full set of distinct games', () => {
-  assert.equal(games.length, 40);
+  assert.equal(games.length, 50);
   assert.equal(new Set(games.map(g => g.id)).size, games.length);
+});
+
+test('wind chimes stay quiet at rest and ring when a tap moves the tubes', () => {
+  const record = makeRecord();
+  const shell = fakeShell(record, 7);
+  shell.resize(720, 540);
+  let notes = 0;
+  shell.stage.audio.note = () => { notes++; };
+  const session = games.find(game => game.id === 'windchimes').start(shell.stage);
+  try {
+    for (let frame = 0; frame < 60; frame++) shell.frame(1 / 60, frame / 60);
+    assert.equal(notes, 0);
+    assert.equal(record.audio, 0);
+    shell.pointer('down', {id: 1, x: 310, y: 245});
+    for (let frame = 60; frame < 120; frame++) shell.frame(1 / 60, frame / 60);
+    assert.ok(notes > 0);
+    assert.deepEqual(record.errors, []);
+  } finally {
+    session.stop();
+  }
 });
 
 for (const game of games) {

@@ -38,10 +38,21 @@ import ducks from './ducks.js';
 import submarine from './submarine.js';
 import garden from './garden.js';
 import pinwheels from './pinwheels.js';
+import drums from './drums.js';
+import bells from './bells.js';
+import maracas from './maracas.js';
+import harp from './harp.js';
+import cymbals from './cymbals.js';
+import tambourine from './tambourine.js';
+import accordion from './accordion.js';
+import windchimes from './windchimes.js';
+import recordplayer from './recordplayer.js';
+import musicbox from './musicbox.js';
 
 export const games = [
   bubbles, paint, fireworks, balls, kaleido, stars, rain, peekaboo, pads, balloons,
   magnets, pond, daynight, blob, blocks, xylophone, snow, worm, lights, shapes,
   flowers, butterflies, frogs, fireflies, berries, train, boats, planes, tractors, rockets,
   turtles, carousel, rainbows, digger, clouds, hotair, ducks, submarine, garden, pinwheels,
+  drums, bells, maracas, harp, cymbals, tambourine, accordion, windchimes, recordplayer, musicbox,
 ];
